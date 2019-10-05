@@ -22,11 +22,17 @@ public class TownMove : MonoBehaviour {
         if (Input.GetKey(KeyCode.A)) inputX += 1;
         if (Input.GetKey(KeyCode.D)) inputX -= 1;
 
-        // Bounds
-        if (inputX > movementVect.x) movementVect.x = inputX;
+        // Make a gradual decrease in movement once the key is released; "slipperiness" if you will
+        if (Mathf.Abs(inputX) > Mathf.Abs(movementVect.x)) movementVect.x = inputX;
+        else movementVect.x *= 0.95f;
+        if (Mathf.Abs(inputZ) > Mathf.Abs(movementVect.y)) movementVect.y = inputZ;
+        else movementVect.y *= 0.95f;
 
-        movementVect = inputVector;
+        movementVect = Vector2.ClampMagnitude(movementVect, 1);
+
         //transform.Translate(new Vector3(movementVect.x, 0, movementVect.y));
+        rb.ResetInertiaTensor();
+        rb.velocity = Vector2.zero;
         rb.MovePosition(transform.position + speed * Time.deltaTime * new Vector3(movementVect.x, 0, movementVect.y));
     }
 }
