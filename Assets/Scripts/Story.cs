@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
-using UnityEditor;
 using UnityEngine;
 using static PlayerController.AttrCheckResult;
 using static PlayerController.Talent;
@@ -39,6 +36,9 @@ public class Choice {
 public static partial class Storyteller {
     // YES, I KNOW THIS FILE IS A BIG MESS, BUT I CAN'T BE ARSED TO MAKE A PROPER API RIGHT NOW
     private static PlayerController Player => PlayerController.Instance;
+    
+    // I'm sorry, this is spaghettified beyond reason now
+    private static AudioController Audio => UIController.GetAudioController();
 
 
     [SuppressMessage("ReSharper", "UseDeconstructionOnParameter")]
@@ -108,7 +108,8 @@ public static partial class Storyteller {
                     ? "The age of free snacks appears to be over, given that people can hardly feed themselves."
                     : "A kindly soul even drops you a snack along with the coins, and you don't end up as tired.", 2),
                 ($"Someone also gives you a kick in the {RandStr("face", "ribs", "chest")} for good measure.", 0),
-                ("However, a gang of thugs has apparently decided they don't like you, and beat you to a pulp.", -1));
+                ("However, you get a unique learning experience: a gang of thugs has apparently decided they " +
+                        "don't like you, and beat you to a pulp.", -1));
 
             
             // disable crit successes at war effort 2; text already changed above.
@@ -126,9 +127,11 @@ public static partial class Storyteller {
             // And gain cash like this:
             var cashGain = PlayerController.RNG.Next(2, 5) + Mathf.Abs(eventResult) + Player.charisma / 2;
             
+            
             Player.creds += cashGain;
             Player.CurHP -= lostHP;
-            Player.CurXP += 1;
+            // gain 2 XP if you get beaten up or crit-succeed, and only 1 otherwise.
+            Player.CurXP += eventResult == -1 || eventResult == 2 ? 2 : 1;
             
             if (PlayerController.PlayerDead)
                 result += (eventResult == -1
@@ -137,7 +140,11 @@ public static partial class Storyteller {
                               : " Still, the gradual exhaustion takes its due, and you succumb to weakness.")
                           + "\n\nThis is the end of the line for you.";
 
-
+            
+            // for whom the bell tolls, hehe
+            Audio.PlayEffect(PlayerController.PlayerDead
+                ? AudioController.AudioEffect.BellNotification
+                : AudioController.AudioEffect.GainCash);
 
   
 
@@ -159,7 +166,8 @@ public static partial class Storyteller {
         StartingEvent = new Event {
             // Begging produces 2-4 creds plus 1 or 2 extra and a possibility of a snack, but costs 3 HP.
             TriggerFunction = () => 
-                "When no other work is available, you might as well do this. The more charismatic you are, the better you should fare." +
+                "When no other work is available, you might as well do this. The more charismatic you are, the better you should fare;" +
+                "and at least, if nothing else, this can be a solid learning experience." +
                 "\n\n" +
                 "Begging can be dangerous, and is also exhausting. You'd better have Health above 5 to proceed safely.",
             Choices = new[] {
@@ -193,10 +201,12 @@ public static partial class Storyteller {
             var cashGain = 5 + Player.strength + Player.endurance;
 
             Player.creds += cashGain;
-            Player.CurHP -= 9;
+            Player.CurHP -= 8;
             Player.CurXP += 2;
 
             result += $"\n\nYou make <b>{cashGain}</b> credits and <b>2</b> Experience, but lose <b>8</b> Health.";
+            
+            Audio.PlayEffect(AudioController.AudioEffect.GainCash);
 
             return result;
         },
@@ -211,7 +221,7 @@ public static partial class Storyteller {
         ContextDescription = "[E] Work",
         StartingEvent = new Event {
             // Construction work provides 5 + STR + END creds per 9 HP.
-            // Working here costs 3 STR and 9 HP.
+            // Working here costs 3 STR and 8 HP.
             TriggerFunction = () => {
                 var result = WarString(
                     "The construction site appears to be the most organised place in this district.",
@@ -259,7 +269,7 @@ public static partial class Storyteller {
                     "That needn't stop you from enjoying some friendly company in these trying times, though.";
             else
                 return
-                    "The shopkeeper's probably a con-man of some description, but you thoroughly enjoy talking to him. " +
+                    "The shopkeeper's a criminal and a con-man, but you thoroughly enjoy talking to him. " +
                     "Not to mention that some of his mannerisms are outright infectious." +
                     "\n\n" +
                     "You need ■ <b>" + Player.charisma + "</b> to raise your Charisma attribute.";
@@ -270,8 +280,54 @@ public static partial class Storyteller {
                 () => {
                     Player.attrPts -= Player.charisma;
                     Player.charisma += 1;
+                    
+                    Audio.PlayEffect(AudioController.AudioEffect.BellNotification);
                 }, null),
             new Choice(() => "Just talk, then leave.", () => true, () => { }, null),
+        }
+    };
+    
+    //
+    private static readonly Event BuyDrugs = new Event {
+        TriggerFunction = () => {
+            var result = "He looks at you with a wide smile on his face.\n" +
+                         "'For you, my friend, I do have something special. <i>\"Sin-Dolor\"</i>. It'll make you... well, it " +
+                         "will make you into an entirely new <i>you</i>.'" +
+                         "\n" +
+                         "You know well what Sin-Dolor is. It's a highly illegal, yet highly powerful synthodrug.\n" +
+                         "<b>Using Sin-Dolor grants you 1 Attribute point, but costs 14 Health and money.</b>" +
+                         "\n\n";
+
+            result += WarString("The shopkeeper smiles. 'For you, old pal, one shot of Sin-Dolor for 40 creds.'",
+                "The shopkeeper smiles. 'For you, old pal, one shot of Sin-Dolor for 50 creds. The good stuff is getting " +
+                "incredibly difficult to get a hold of, what with the war and so on.'",
+                "The shopkeeper smiles, but his smile is strained. 'For you, old pal, the lowest price I can ask for" +
+                "a shot of Sin-Dolor is 80 creds. It's virtually impossible to find, what with the Circle on our doorstep.'");
+
+            return result;
+        },
+        Choices = new[] {
+            new Choice(() => {
+                    var price = Player.warState == 0 ? 40 : Player.warState == 1 ? 50 : 80;
+                    return $"Buy a shot of the drug. (֎ {price}, +1 ■)";
+                },
+                () => Player.CurHP >= 15 && (Player.warState == 0 && Player.creds >= 40 ||
+                      Player.warState == 1 && Player.creds >= 50 ||
+                      Player.warState == 2 && Player.creds >= 80),
+                () => {
+                    var price = Player.warState == 0 ? 40 : Player.warState == 1 ? 50 : 80;
+                    Player.creds -= price;
+                    Player.attrPts += 1;
+                    Player.CurHP -= 14;
+                }, null),
+            new Choice(() => "Shake your head and leave. No drugs right now.", () => Player.CurHP >= 15, () => { },
+                null),
+            new Choice(() => "Shake your head. You're not feeling tough enough to use it yet.", () => Player.CurHP < 15,
+                () => { }, null),
+            new Choice(() => "Shake your head. You're not rich enough to buy any yet.",
+                () => Player.warState == 0 && Player.creds < 40 ||
+                      Player.warState == 1 && Player.creds < 50 ||
+                      Player.warState == 2 && Player.creds < 80, () => { }, null),
         }
     };
 
@@ -292,6 +348,8 @@ public static partial class Storyteller {
             Choices = new[] {
                 new Choice(() => "Converse with the shopkeeper. <b>[CHA trainer]</b>", () => true, () => { },
                     SupermarketTrain),
+                new Choice(() => "Ask him about the 'special offer'.", () => true, () => { },
+                    BuyDrugs),
                 new Choice(() => "Leave.", () => true, () => { }, null),
             }
         }
@@ -330,6 +388,8 @@ public static partial class Storyteller {
                 () => {
                     Player.attrPts -= Player.strength;
                     Player.strength += 1;
+                    
+                    Audio.PlayEffect(AudioController.AudioEffect.BellNotification);
                 }, null),
             new Choice(() => "Converse and depart.", () => true, () => { }, null),
         }
@@ -388,6 +448,8 @@ public static partial class Storyteller {
                 () => {
                     Player.attrPts -= Player.endurance;
                     Player.endurance += 1;
+                    
+                    Audio.PlayEffect(AudioController.AudioEffect.BellNotification);
                 }, null),
             new Choice(() => "Speak to the old soldier, then go about your way.", () => true, () => { }, null),
         }
@@ -484,6 +546,8 @@ public static partial class Storyteller {
 
             result += "\n\nThis is the end of the line for you.";
 
+            Audio.PlayEffect(AudioController.AudioEffect.BellNotification);
+            
             // scripted death :( - or not really! but game over anyway
             Player.wasSoldier = true;
             if (Player.warState == 0 && Player.talent == Marksman) Player.livedAtTheEnd = true;
@@ -535,6 +599,8 @@ public static partial class Storyteller {
             Player.wasPilot = true;
             if (Player.warState == 2 && Player.talent == Pilot) Player.livedAtTheEnd = true;
             Player.CurHP = 0;
+            
+            Audio.PlayEffect(AudioController.AudioEffect.BellNotification);
 
             return result;
         },
@@ -707,7 +773,11 @@ public static partial class Storyteller {
                 result += " And even though you didn't become a pilot, you feel your father would be proud of your valour.";
             }
             
+            Audio.PlayEffect(AudioController.AudioEffect.BellNotification);
+            
             result += "\n\nThis is the end of the line for you.";
+            
+            
 
             return result;
         },
@@ -728,6 +798,15 @@ public static partial class Storyteller {
             var result = (Player.numDaysPassed <= DateStuff.DAYS_PASSED_WAR_GOES_WORSE
                              ? "You gather the latest goings-on.\n\n"
                              : "") + "<i>" + currentNews + "</i>";
+            
+            // play the bell noise on the "important days", otherwise the paper crumpling
+            var redLetterDay = Player.numDaysPassed == DateStuff.DAYS_PASSED_WAR_GOES_BAD ||
+                               Player.numDaysPassed == DateStuff.DAYS_PASSED_WAR_GOES_WORSE ||
+                               Player.numDaysPassed == DateStuff.DAYS_PASSED_FINALE;
+            Audio.PlayEffect(redLetterDay
+                ? AudioController.AudioEffect.BellNotification
+                : AudioController.AudioEffect.ReadNewsNoNotif);
+            
 
             return result;
         },
@@ -768,7 +847,7 @@ public static partial class Storyteller {
             result += checkResult + "\n\nYou recover <b>" + roll + "</b> Health, and it is now tomorrow.";
             Player.CurHP += roll;
             Player.numDaysPassed += 1;
-
+            
             return result;
         },
         Choices = new[] {
@@ -833,35 +912,37 @@ public static partial class Storyteller {
     //
     private static readonly Story SleepInside = new Story {
         ContextTitle = "HOTEL",
-        ContextDescription = "[E] Sleep comfortably (֎ 10)",
+        ContextDescription = "[E] Sleep comfortably",
         StartingEvent = new Event {
             // Sleeping inside recovers 10 + 0-5 HP.
             TriggerFunction = () => {
-                var result =
-                    "You saunter up to the reception and ask for a room. The thuggish-looking proprietor gives you a glance.\n'Ten credits.'";
-                result += Player.creds >= 10
+                var result = WarString(
+                    "You saunter up to the reception and ask for a room. The thuggish-looking proprietor gives " +
+                    "you a glance.\n'Ten creds.'",
+                    "The thuggish proprietor looks antsy as he sees you enter. 'Half my tenants have left this dump " +
+                    "already, kid. 'Cause of the war. Rooms are available for 5 creds a night.'",
+                    "The proprietor is nowhere to be seen. He's probably run away like virtually every other tenant. " +
+                    "You can choose any room you like for free.");
+                result += Player.creds >= (Player.warState == 0 ? 10 : Player.warState == 1 ? 5 : 0)
                     ? ""
                     : "\nYou realise you can't afford a room here right now.'";
                 return result;
             },
             Choices = new[] {
-                new Choice(() => "Rent a room for the night. (֎ 10)",
-                    () => Player.creds >= 10,
-                    () => Player.creds -= 10,
-                    SleepInsideEvent),
-                new Choice(() => "Decide against resting right now.", () => Player.creds >= 10,
-                    () => { }, null),
-                new Choice(() => "Leave.", () => Player.creds < 10, () => { }, null),
+                new Choice(() => {
+                        var price = (Player.warState == 0 ? 10 : Player.warState == 1 ? 5 : 0);
+                        return $"Rent a room for the night. (֎ {price})";
+                    },
+                    () => Player.creds >= (Player.warState == 0 ? 10 : Player.warState == 1 ? 5 : 0),
+                    () => Player.creds -= (Player.warState == 0 ? 10 : Player.warState == 1 ? 5 : 0), SleepInsideEvent),
+                new Choice(() => "Decide against resting right now.",
+                    () => Player.creds >= (Player.warState == 0 ? 10 : Player.warState == 1 ? 5 : 0), () => { }, null),
+                new Choice(() => "Leave. You're too poor to sleep here.",
+                    () => Player.creds < (Player.warState == 0 ? 10 : Player.warState == 1 ? 5 : 0), () => { }, null),
             }
         }
     };
 
-    
-    
-    
-    
-    
-    
     
     
     

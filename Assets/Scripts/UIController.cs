@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography.X509Certificates;
-using UnityEditor;
 using UnityEngine;
-using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -17,6 +12,8 @@ public class UIController : MonoBehaviour {
     public RectTransform contextPanel = null;
     public RectTransform deathPanel = null;
 
+    public AudioController audioController;
+    
     private static UIController Instance { get; set; }
 
     public static bool CharScreenActive { get; private set; }
@@ -27,6 +24,11 @@ public class UIController : MonoBehaviour {
     private DialogueScreen dialogueScreenScript = null;
     private Story contextActivatableStory = null; // This is "loaded" whilst the player is inside a "story" trigger.
     private List<Choice> lastSentChoices = null; // This holds all choices we SENT to the actual dialogue screen, in order.
+
+    // SPAGHETTIIIIII
+    public static AudioController GetAudioController() {
+        return Instance.audioController;
+    }
     
     void Start() { // not Awake to give the player controller time to hook itself up
         if (Instance == null) Instance = this;
@@ -37,7 +39,15 @@ public class UIController : MonoBehaviour {
         
         
         deathPanel.gameObject.SetActive(false);
+        charScreen.gameObject.SetActive(false);
         infoPanel.gameObject.SetActive(true);
+        
+        
+        // Audio: start a track and the rain sound
+        audioController.ToggleRainNoise(true);        
+        audioController.ToggleGuitarTrack(true);        
+        
+        
     }
 
     // This handles screen changes and shit
@@ -98,6 +108,8 @@ public class UIController : MonoBehaviour {
         //Debug.Log("test 2");
         // Start story, i.e. trigger first event
         StartEvent(contextActivatableStory.StartingEvent);
+        
+        Instance.audioController.PlayEffect(AudioController.AudioEffect.StartDialogue);
     }
 
     private void EndStory() {
@@ -136,6 +148,8 @@ public class UIController : MonoBehaviour {
 
         lastSentChoices[optionSelected].Effect();
         UIController.TriggerUIUpdate(); // just in case...
+        
+        Instance.audioController.PlayEffect(AudioController.AudioEffect.SelectDialogueOption);
    
         StartEvent(lastSentChoices[optionSelected].NextEvent);
     }
@@ -230,7 +244,9 @@ public class UIController : MonoBehaviour {
     }
     
     public void OnClick_SaveAndExit() {
-        // TODO: SAVING AND LOADING
+        // TODO: SAVING AND LOADING - NOT TODAY
+        // This function is being appropriated for audio mute
+        audioController.ToggleGuitarMute(!audioController.GuitarMuted);
     }
 
     public void OnClick_Restart() {

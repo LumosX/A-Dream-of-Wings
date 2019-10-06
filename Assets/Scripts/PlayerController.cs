@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using UnityEngine;
-using UnityEngine.AI;
 using Random = System.Random;
 
 public class PlayerController : MonoBehaviour {
@@ -25,9 +21,12 @@ public class PlayerController : MonoBehaviour {
     public int CurXP {
         get => curXP;
         set {
-            if (value == 10) {
+            if (value >= 10) {
                 attrPts += 1;
-                curXP = 0;
+                curXP = value - 10;
+                
+                // hahahaaaa, this is beyond spaghettified
+                UIController.GetAudioController().PlayEffect(AudioController.AudioEffect.BellNotification);
             }
             else curXP = value;
         }
@@ -62,12 +61,30 @@ public class PlayerController : MonoBehaviour {
     // Start is called before the first frame update
     void Awake() {
         if (Instance == null) Instance = this;
+        
+        // Check which talent the player chose and set up accordingly.
+        strength = endurance = charisma = attrPts = 1;
+        creds = 0;
+        curXP = 0;
+        curHP = 10;
+        talent = NewGameDataCarrier.ChosenTalent;
+        switch (talent) {
+            case Talent.None:
+                attrPts = 0; // Only the "none" starts with 0 talent points.
+                break;
+            case Talent.Pilot: // Pilots get nothing extra except the attribute point
+                break;
+            case Talent.Witty: // Witty gets +1 CHA
+                charisma = 2;
+                break;
+            case Talent.Marksman: // Marksman's probably OP, gets +1 STR on top of special options.
+                strength = 2;
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
     }
 
-    // Update is called once per frame
-    void Update() { }
-    
-    
     
     
     ////////////////// THESE THINGS NEED TO BE EXTRACTED FROM HERE BUT I DON'T GIVE A FUUUUUUUUUUCK

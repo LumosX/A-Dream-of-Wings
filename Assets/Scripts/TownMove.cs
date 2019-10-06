@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 public class TownMove : MonoBehaviour {
     public float speed = 10;
@@ -12,6 +10,9 @@ public class TownMove : MonoBehaviour {
     private void Awake() {
         rb = GetComponent<Rigidbody>();
     }
+    
+    
+    // NB: This really doesn't need to be here or look like this, but it's the first script I wrote, so it remains on its own.
 
     void Update() {
         // Just do input here.

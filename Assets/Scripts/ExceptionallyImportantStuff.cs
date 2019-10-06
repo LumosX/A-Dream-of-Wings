@@ -48,7 +48,9 @@ public static class DateStuff {
         // WAR GOES BAD HERE
         {12, "This morning bears terrible news. The entirety of the Fourth Fleet has been destroyed. They were caught in an " +
              "ambush by a Circle battlefleet. The war has once again taken a turn for the worse. Grand Master Chenot Chen advises that " +
-             "we remain uplifted and certain in our eventual victory."},
+             "we remain uplifted and certain in our eventual victory." +
+             "\n\n" +
+             "<b>Things are going to get noticeably worse now.</b>"},
         {13, "The majority of the Scriptorium's fleets have retreated to the Great Blockade, which shall stop the enemy's advance in " +
              "its tracks. The Circle is to break upon the Blockade like a wave on the shore."},
         {14, "No news this morning."},
@@ -62,7 +64,9 @@ public static class DateStuff {
         {21, "This morning bears the worst news since the Battle of the Arches. The Circle forces have broken through the Great Blockade, " +
              "using another void-jumping fleet. Even though half of their battlefleet has been destroyed in this dangerous jump, the surprise " +
              "was still sufficient to allow the Blockade to be perforated, even though the Circle suffered terrible casualties in the process. " +
-             "One Circle battlefleet is now advancing towards Towerhold, and the Scriptorium is mustering whomever it can."},
+             "One Circle battlefleet is now advancing towards Towerhold, and the Scriptorium is mustering whomever it can." +
+             "\n\n" +
+             "<b>Things are going to get noticeably worse now.</b>"},
         {22, "The Twelfth Fleet is apparently on its way to relieve Towerhold. They're expected tomorrow."},
         {23, "The Twelfth didn't arrive, but it's still en route and scheduled to arrive before the Circle forces. Grand " +
              "Master Chenot Chen advises calmness and courage."},
@@ -81,10 +85,9 @@ public static class DateStuff {
     public const int DAYS_PASSED_WAR_GOES_WORSE = 21;
     public const int DAYS_PASSED_FINALE = 28;
 
+}
 
 
-
-
-
-
+public static class NewGameDataCarrier {
+    public static PlayerController.Talent ChosenTalent = PlayerController.Talent.None;
 }
