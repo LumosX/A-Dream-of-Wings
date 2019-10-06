@@ -21,6 +21,11 @@ public class TownMove : MonoBehaviour {
         if (Input.GetKey(KeyCode.S)) inputZ += 1;
         if (Input.GetKey(KeyCode.A)) inputX += 1;
         if (Input.GetKey(KeyCode.D)) inputX -= 1;
+        
+        // This only works when not in dialogues or the char screen (or when not dead), so overwrite input otherwise.
+        if (UIController.CharScreenActive || UIController.DialogueScreenActive || PlayerController.PlayerDead)
+            inputX = inputZ = 0;
+
 
         // Make a gradual decrease in movement once the key is released; "slipperiness" if you will
         if (Mathf.Abs(inputX) > Mathf.Abs(movementVect.x)) movementVect.x = inputX;
@@ -29,10 +34,16 @@ public class TownMove : MonoBehaviour {
         else movementVect.y *= 0.95f;
 
         movementVect = Vector2.ClampMagnitude(movementVect, 1);
-
+    }
+    
+    // Do the actual movement here, because we're doing RB stuff.
+    void FixedUpdate() {
         //transform.Translate(new Vector3(movementVect.x, 0, movementVect.y));
         rb.ResetInertiaTensor();
         rb.velocity = Vector2.zero;
         rb.MovePosition(transform.position + speed * Time.deltaTime * new Vector3(movementVect.x, 0, movementVect.y));
     }
+    
 }
+
+

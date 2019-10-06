@@ -1,22 +1,44 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.AI;
+using Random = System.Random;
 
 public class PlayerController : MonoBehaviour {
     // HP and XP
-    public int curHP = 10;
-    public int maxHP = 10;
+
+    private int curHP = 10;
+    public int CurHP {
+        get => curHP;
+        // if Cur + added > Max, revert to max
+        set => curHP = value > MaxHP ? MaxHP : value;
+    }
+
+    public static bool PlayerDead => PlayerController.Instance.curHP <= 0;
+
+    public int MaxHP => 5 + endurance * 5;
     public int creds = 0;
-    public int curXP = 0; // Extra attribute points are gained every 10 XP
+
+    private int curXP = 0; // Extra attribute points are gained every 10 XP
+    public int CurXP {
+        get => curXP;
+        set {
+            if (value == 10) {
+                attrPts += 1;
+                curXP = 0;
+            }
+            else curXP = value;
+        }
+    }
 
     public int attrPts = 1;
     public int strength = 1;
     public int endurance = 1;
     public int charisma = 1;
 
-    public Talent talent = Talent.None; 
+    public Talent talent = Talent.None;
 
     public enum Talent {
         None,
@@ -25,54 +47,51 @@ public class PlayerController : MonoBehaviour {
         Marksman
     }
     
-    
     public int numDaysPassed = 0;
 
-    public static PlayerController instance = null;
+    public int warState = 0; // the greater this is, the worse things are.
+
+    public bool wasDraftedLate = false;
+    public bool wasSoldier;
+    public bool wasPilot = false;
+    public bool livedAtTheEnd = false;
+
+    public static PlayerController Instance = null;
 
 
     // Start is called before the first frame update
     void Awake() {
-        if (instance == null) instance = this;
+        if (Instance == null) Instance = this;
     }
 
     // Update is called once per frame
     void Update() { }
+    
+    
+    
+    
+    ////////////////// THESE THINGS NEED TO BE EXTRACTED FROM HERE BUT I DON'T GIVE A FUUUUUUUUUUCK
+    public static readonly Random RNG = new Random();
+    
+    // string arg because I can't be arsed
+    public static AttrCheckResult AttributeCheck(string attribute) {
+        // Roll 1d5, success if rolled equal or under the selected attribute.
+        var roll = RNG.Next(1, 6);
+        var attrVal = attribute == "STR"
+            ? Instance.strength
+            : attribute == "END"
+                ? Instance.endurance
+                : Instance.charisma;
+        // Is it a success or a failure? Is it critical?
+        // "Critical" is when the difference between the two is 3 or more.
+        if (roll <= attrVal && Mathf.Abs(attrVal - roll) >= 3) return AttrCheckResult.CritSuccess;
+        if (roll <= attrVal) return AttrCheckResult.Success;
+        if (roll > attrVal && Mathf.Abs(attrVal - roll) >= 3) return AttrCheckResult.CritFail;
+        return AttrCheckResult.Fail;
+    }
 
-
-    private void OnTriggerEnter(Collider other) {
-        Debug.Log("ENTERED " + other.name);
+    public enum AttrCheckResult {
+        Success, Fail, CritSuccess, CritFail
     }
     
-    private void OnTriggerExit(Collider other) {
-        Debug.Log("LEFT " + other.name);
-    }
-}
-
-
-public static class DateStuff {
-    // I'll just shove these here because who cares
-    public const int STARTING_DAY = 14;
-    public const int STARTING_MONTH = 10;
-    public const int STARTING_YEAR = 3279;
-
-    private static int absoluteStartingDay => (STARTING_YEAR - 1) * MONTHS_PER_YEAR * DAYS_PER_MONTH +
-                                              (STARTING_MONTH - 1) * DAYS_PER_MONTH +
-                                              (STARTING_DAY - 1);
-
-    public const int DAYS_PER_MONTH = 22;
-    public const int MONTHS_PER_YEAR = 10;
-
-    private static int daysPerYear = DAYS_PER_MONTH * MONTHS_PER_YEAR;
-
-    // tuples are pretty nifty, aren't they
-    public static (int, int, int) GetDateFormat(int numDaysPassed) {
-        var absoluteDay = absoluteStartingDay + numDaysPassed;
-    
-        var curYear = absoluteDay / daysPerYear;
-        var curMonth = (absoluteDay - daysPerYear * curYear) / DAYS_PER_MONTH;
-        var curDay = (absoluteDay % daysPerYear) % DAYS_PER_MONTH;
-        
-        return (curDay + 1, curMonth + 1, curYear + 1);
-    }
 }
