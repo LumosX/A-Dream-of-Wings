@@ -166,7 +166,7 @@ public static partial class Storyteller {
         StartingEvent = new Event {
             // Begging produces 2-4 creds plus 1 or 2 extra and a possibility of a snack, but costs 3 HP.
             TriggerFunction = () => 
-                "When no other work is available, you might as well do this. The more charismatic you are, the better you should fare;" +
+                "When no other work is available, you might as well do this. The more charismatic you are, the better you should fare; " +
                 "and at least, if nothing else, this can be a solid learning experience." +
                 "\n\n" +
                 "Begging can be dangerous, and is also exhausting. You'd better have Health above 5 to proceed safely.",
@@ -192,13 +192,12 @@ public static partial class Storyteller {
     //////////////////////////////////////////// CONSTRUCTION SITE
     //
     private static readonly Event ConstructionWorkEvent = new Event {
-        // Sleeping inside recovers 10 + 0-5 HP.
         TriggerFunction = () => {
             var result =
                 "The shift is long and exhausting, but you get good money at the end of it. " +
                 "You notice that the stronger and tougher you are, the more work you'll be able to do, and thus the more pay you will receive.";
 
-            var cashGain = 5 + Player.strength + Player.endurance;
+            var cashGain = 7 + Player.strength + Player.endurance;
 
             Player.creds += cashGain;
             Player.CurHP -= 8;
@@ -220,7 +219,7 @@ public static partial class Storyteller {
         ContextTitle = "CONSTRUCTION SITE",
         ContextDescription = "[E] Work",
         StartingEvent = new Event {
-            // Construction work provides 5 + STR + END creds per 9 HP.
+            // Construction work provides 7 + STR + END creds per 8 HP.
             // Working here costs 3 STR and 8 HP.
             TriggerFunction = () => {
                 var result = WarString(
@@ -266,7 +265,7 @@ public static partial class Storyteller {
             if (Player.charisma == 5)
                 return
                     "Try as you might, it seems you've assimilated everything there was to being charismatic from the shopkeeper." +
-                    "That needn't stop you from enjoying some friendly company in these trying times, though.";
+                    " That needn't stop you from enjoying some friendly company in these trying times, though.";
             else
                 return
                     "The shopkeeper's a criminal and a con-man, but you thoroughly enjoy talking to him. " +
@@ -319,6 +318,8 @@ public static partial class Storyteller {
                     Player.creds -= price;
                     Player.attrPts += 1;
                     Player.CurHP -= 14;
+                    
+                    Audio.PlayEffect(AudioController.AudioEffect.BellNotification);
                 }, null),
             new Choice(() => "Shake your head and leave. No drugs right now.", () => Player.CurHP >= 15, () => { },
                 null),
@@ -507,7 +508,7 @@ public static partial class Storyteller {
                                     "'Basic training is brutal, kid, especially in a time of war. You have to be tougher to make it.'",
                                     "The squadsman shakes his head.\n" +
                                     "'Basic training is brutal, kid, and you'll be deployed to front lines afterwards. You need to be tougher to make it.'",
-                                    "The squadsman grins at you." +
+                                    "The squadsman grins at you.\n" +
                                     "'Even though we're all going to die, and even though you should be lucky you're alive instead of trying to join the army " +
                                     "and thus kill yourself, I'd take you. Still, you'd need to be put through basic training, and I see you wouldn't make it.'")
                                 + "\n\nEnlisting with the Army requires <b>3 END</b>.",
@@ -631,7 +632,7 @@ public static partial class Storyteller {
 
             if (isPilot && Player.warState > 0) {
                 result += "\nYou give him a look.\n'What,' he says. 'Normally the prices are twice as high." +
-                          "You're getting a discount because of your dad.'";
+                          " You're getting a discount because of your dad.'";
             }
 
             if (Player.warState == 2)
@@ -671,19 +672,21 @@ public static partial class Storyteller {
         TriggerFunction = () => {
             var result =
                 "The squadsman nods. 'You look tough enough to make it through basic training. All right. But piloting...'\n\n" +
-                "You ask what if there's a problem with that.";
+                "You ask what if there's a problem with that.\n";
             result += WarString(
-                          "'Pilots are officers, bannermen and higher ranks. We can enlist you as a linesman in the Infantry though.'",
+                          "'Pilots are officers, bannermen and higher ranks. We can enlist you as a linesman in the Infantry though.'"
+                          ,
                           "'We're in need of trained pilots, not rookies. I doubt we'd be able to train you in time, even if we wanted. " +
-                          "Still, we can enlist you as a linesman in the Infantry. Solid work, and necessary. ",
+                          "Still, we can enlist you as a linesman in the Infantry. Solid work, and necessary. "
+                          ,
                           "'Kid, we're losing the war. We're in desperate need of vehicles and trained pilots, not cannon fodder for " +
                           "the Circle's forces. Besides, pilots have a life expectancy of hours nowadays... You could join the Infantry if you want. " +
-                          "It's probably safer for you to do so, anyway, than being a pilot. ")
+                          "It's probably safer for you to do so, anyway, than being a pilot.")
                       // special note if the player's a marksman
                       + (Player.talent == Marksman
-                          ? "Not to mention that an accomplished MARKSMAN like you could go far in the Infantry!'"
+                          ? " Not to mention that an accomplished MARKSMAN like you could go far in the Infantry!'"
                           : "'")
-                      + "\n\n''The fate of a linesman in the infantry is usually to be slaughtered in some way or another, but it is an option you could take...";
+                      + "\n\nThe fate of a linesman in the infantry is usually to be slaughtered in some way or another, but it is an option you could take...";
             return result;
         },
         Choices = new[] {
@@ -749,9 +752,8 @@ public static partial class Storyteller {
     //////////////////////////////////////////// SLEEPING: NEWS AND WAR STATE PROGRESSION
     private static readonly Event FinaleEvent = new Event {
         TriggerFunction = () => {
-            Player.wasDraftedLate = true;
-            var result = "The Circle is here, and they're here to stay. Every able-bodied citizen is being drafted into a " +
-                         "alleged militia. And although the Circle loses thousands of men and spacecraft in the battle, the " +
+            var result = "The Circle is here, and they're here to stay. Every able-bodied citizen is being drafted into an " +
+                         "alleged militia. Although the Circle loses thousands of men and spacecraft in the battle, the " +
                          "Towerhold garrison is unable to stop them." +
                          "\n\n" +
                          "Your militia ends up engaging the tall, well-armoured Circle soldiers. Even in battle they go wreathed " +
@@ -777,7 +779,8 @@ public static partial class Storyteller {
             
             result += "\n\nThis is the end of the line for you.";
             
-            
+            Player.CurHP = 0;
+            Player.wasDraftedLate = true;
 
             return result;
         },
@@ -931,7 +934,9 @@ public static partial class Storyteller {
             Choices = new[] {
                 new Choice(() => {
                         var price = (Player.warState == 0 ? 10 : Player.warState == 1 ? 5 : 0);
-                        return $"Rent a room for the night. (֎ {price})";
+                        return Player.warState == 2
+                            ? "Take a room for the night."
+                            : $"Rent a room for the night. (֎ {price})";
                     },
                     () => Player.creds >= (Player.warState == 0 ? 10 : Player.warState == 1 ? 5 : 0),
                     () => Player.creds -= (Player.warState == 0 ? 10 : Player.warState == 1 ? 5 : 0), SleepInsideEvent),

@@ -404,6 +404,7 @@ GameObject:
   m_Component:
   - component: {fileID: 44121053}
   - component: {fileID: 44121054}
+  - component: {fileID: 44121055}
   m_Layer: 0
   m_Name: volume collider
   m_TagString: Untagged
@@ -434,10 +435,23 @@ SphereCollider:
   m_GameObject: {fileID: 44121052}
   m_Material: {fileID: 0}
   m_IsTrigger: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 2
   m_Radius: 4
   m_Center: {x: 0.5, y: 0, z: -0.42}
+--- !u!65 &44121055
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 44121052}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 8, y: 8, z: 8}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!43 &56986486
 Mesh:
   m_ObjectHideFlags: 0
